@@ -566,7 +566,7 @@ mod test {
     fn test_massive_task_creation() {
         let test_tasks = 4_200_000;
 
-        let pool = ThreadPool::new(TEST_TASKS);
+        let mut pool = ThreadPool::new(TEST_TASKS);
         let b0 = Arc::new(Barrier::new(TEST_TASKS + 1));
         let b1 = Arc::new(Barrier::new(TEST_TASKS + 1));
 
@@ -595,9 +595,10 @@ mod test {
 
         assert_eq!(rx.iter().take(test_tasks).fold(0, |a, b| a + b), test_tasks);
         // `iter().take(test_tasks).fold` may be faster than the last thread finishing itself, so
-        // values of 0 or 1 are ok.
+        // join threads before checking the active_count
+        pool.join();
         let atomic_active_count = pool.active_count();
-        assert!(atomic_active_count <= 1, "atomic_active_count: {}", atomic_active_count);
+        assert!(atomic_active_count == 0, "atomic_active_count: {}", atomic_active_count);
     }
 
     #[test]
